@@ -1,0 +1,594 @@
+---
+title: "Trabajo final - Analítica predictiva"
+author: "Luisa Pioltino"
+date: "17/1/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library (ggplot2)
+library(dplyr)
+library(forcats)
+library(tidyverse)
+library ("mice")
+library(knitr)
+
+```
+
+```{r}
+data=read.csv("healthcare-dataset-stroke-data.csv",sep=",")
+```
+
+```{r}
+str(data)
+```
+
+```{r}
+head(data)
+```
+
+```{r}
+dim(data)
+```
+
+```{r}
+summary(data)
+```
+
+```{r}
+library("mice")
+md.pattern(data,rotate.names = 90)
+```
+
+
+```{r}
+data$bmi=as.integer(data$bmi)
+``` 
+
+
+Hay 200 NA 
+Antes los NA no saltaban porque la variable estaba como caracter
+
+Reemplazo por la mediana 
+
+```{r}
+data$bmi[is.na(data$bmi)] <- median(data$bmi,na.rm = TRUE)
+```
+
+
+ANALISIS UNIVARIADO
+
+*GENERO*
+
+```{r}
+table(data$gender)
+```
+
+```{r}
+genero<-data.frame(table(data$gender))
+genero$frequencia<-round((genero$Freq/5110)*100,2)
+etiqueta<-paste(genero$frequencia,"%",sep = " ")
+colores<-c("#FF82AB", "#009ACD","#EEAEEE")
+pie(genero$frequencia,labels=etiqueta,clockwise=TRUE,col=colores,main="GENERO")
+legend("topright",c("Femenino","Masculino","Otro"),cex=0.9,fill=colores)
+```
+
+
+
+*EDAD*
+
+```{r}
+summary(data$age)
+```
+
+```{r}
+table(data$age)
+```
+
+```{r}
+boxplot(data$age,col=c("darkblue"),main="EDAD")
+```
+
+No hay outliers
+
+```{r}
+hist(data$age,main="EDAD",col="darkblue", xlab= " ")
+```
+
+*WORK TYPE* 
+
+
+Nada mas tiene sentido que los que tienen menos de 16 años tengan children. Los que tienen menos de 16 y tienen otra categoria en work type lo cambio a children.
+
+
+```{r}
+table(data$work_type)
+```
+
+```{r}
+data$work_type<-ifelse(data$age<16,"children",data$work_type)
+```
+
+```{r}
+chicos<-filter(data,data$age<16)
+table(chicos$work_type)
+```
+
+
+
+```{r}
+type<-data.frame(table(data$work_type))
+type$Frequencia=type$Freq
+```
+
+```{r}
+type %>%
+   mutate(Var1 = fct_reorder(Var1, Freq)) %>%
+  slice(1:10) %>%
+  ggplot( aes(x=Var1, y=Frequencia, fill=Var1)) + 
+    geom_bar(stat="identity",  alpha=.6, width=.4) +
+    coord_flip() +
+    xlab(" ") +
+    theme_bw()+
+  scale_fill_brewer(palette = "Spectral") + 
+  theme(legend.position=" ")
+```
+```{r}
+
+```
+
+*HYPERTENSION*
+
+```{r}
+table(data$hypertension)
+```
+
+```{r}
+hyper<-data.frame(table(data$hypertension))
+hyper$frequencia<-round((hyper$Freq/5110)*100,2)
+etiqueta<-paste(hyper$frequencia,"%",sep = " ")
+colores<-c("#00CD00" ,"#FF4500")
+pie(hyper$frequencia,labels=etiqueta,clockwise=TRUE,col=colores,main="HYPERTENSION")
+legend("topright",c("No Tiene","Tiene"),cex=0.9,fill=colores)
+```
+
+*HEART DISEASE*
+
+
+```{r}
+heart<-table(data$heart_disease)
+```
+
+
+```{r}
+heart<-data.frame(table(data$heart_disease))
+heart$frequencia<-round((heart$Freq/5110)*100,2)
+etiqueta<-paste(heart$frequencia,"%",sep = " ")
+colores<-c("#00CD00" ,"#FF4500")
+pie(heart$frequencia,labels=etiqueta,clockwise=TRUE,col=colores,main="HEART DISEASE")
+legend("topright",c("No Tiene","Tiene"),cex=0.9,fill=colores)
+```
+
+*EVER MARRIED*
+
+```{r}
+table(data$ever_married)
+```
+
+
+```{r}
+casado<-data.frame(table(data$ever_married))
+casado$frequencia<-round((casado$Freq/5110)*100,2)
+etiqueta<-paste(casado$frequencia,"%",sep = " ")
+colores<-c("#FF4500","#00CD00")
+pie(casado$frequencia,labels=etiqueta,clockwise=TRUE,col=colores,main="CASADO")
+legend("topright",c("No","Si"),cex=0.9,fill=colores)
+```
+
+*RESIDENCE TYPE*
+
+```{r}
+table(data$Residence_type)
+```
+
+
+```{r}
+res<-data.frame(table(data$Residence_type))
+res$frequencia<-round((res$Freq/5110)*100,2)
+etiqueta<-paste(res$frequencia,"%",sep = " ")
+colores<-c("#00CD00","#AB82FF")
+pie(res$frequencia,labels=etiqueta,clockwise=TRUE,col=colores,main="RESIDENCIA")
+legend("topright",c("Rural","Urbano"),cex=0.9,fill=colores)
+```
+
+
+*NIVEL DE GLUCOSA*
+
+```{r}
+table(data$avg_glucose_level)
+```
+
+
+```{r}
+summary(data$avg_glucose_level)
+```
+
+```{r}
+boxplot(data$avg_glucose_level,col=c("darkblue"),main="NIVEL PROMEDIO DE GLUCOSA EN SANGRE")
+```
+Muchos valores atipicos!!!
+
+```{r}
+hist(data$avg_glucose_level,main="NIVEL DE GLUCOSA EN SANGRE",col="darkblue", xlab= " ")
+```
+
+ESCALA LOGARITMICA
+
+```{r}
+data$avg_glucose_level=log(data$avg_glucose_level)
+```
+
+
+```{r}
+boxplot(data$avg_glucose_level,col=c("darkblue"),main="NIVEL PROMEDIO DE GLUCOSA EN SANGRE")
+```
+
+
+```{r}
+hist(data$avg_glucose_level,main="NIVEL DE GLUCOSA EN SANGRE",col="darkblue", xlab= " ")
+```
+
+Valores atipicos
+
+```{r}
+ric<- 4.737 - 4.347
+limite_inferior<-4.347-1.5*ric
+limite_superior<-4.737 +3*ric
+```
+
+```{r}
+data$avg_glucose_level<-ifelse(data$avg_glucose_level>=limite_superior,median(data$avg_glucose_level),data$avg_glucose_level)
+```
+
+
+Inferior a 140 es un nivel normal de glucosa. Puedo hacer una variable dummie con valores normales vs valores anormales 
+
+
+*BMI*
+
+
+
+```{r}
+mean(is.na(data$bmi))
+```
+```{r}
+summary(data$bmi)
+```
+
+
+```{r}
+boxplot(data$bmi,col=c("darkblue"),main="INDICE DE MASA CORPORAL")
+```
+
+
+Muchos valores atipicosss!!
+```{r}
+hist(data$bmi,main="INDICE DE MASA CORPORAL",col="darkblue", xlab= " ")
+```
+
+
+```{r}
+boxplot(data$bmi,col=c("darkblue"),main="INDICE DE MASA CORPORAL")
+```
+
+```{r}
+hist(data$bmi,main="INDICE DE MASA CORPORAL",col="darkblue", xlab= " ")
+```
+
+Funciona con log!
+
+```{r}
+data$bmi=log(data$bmi)
+```
+
+```{r}
+ric<- 3.466 -  3.135
+limite_inferior<-3.135-1.5*ric
+limite_superior<-3.466 +3*ric
+```
+
+
+```{r}
+data$bmi<-ifelse(data$bmi>=limite_superior,median(data$bmi),data$bmi)
+data$bmi<-ifelse(data$bmi<=limite_inferior,median(data$bmi),data$bmi)
+
+```
+
+
+Si su IMC es inferior a 18,5 , se encuentra dentro del rango de bajo peso.
+Si su IMC es de 18,5 a 24,9 , se encuentra dentro del rango de peso normal o saludable.
+Si su IMC es de 25,0 a 29,9 , se encuentra dentro del rango de sobrepeso.
+Si su IMC es 30.0 o superior , se encuentra dentro del rango de obesidad.
+
+
+
+*STATUS FUMADOR*
+
+```{r}
+table(data$smoking_status)
+```
+
+
+```{r}
+fuma<-data.frame(table(data$smoking_status))
+fuma$Frequencia=fuma$Freq
+fuma %>%
+   mutate(Var1 = fct_reorder(Var1, Freq)) %>%
+  slice(1:10) %>%
+  ggplot( aes(x=Var1, y=Frequencia, fill=Var1)) + 
+    geom_bar(stat="identity",  alpha=.6, width=.4) +
+    coord_flip() +
+    xlab(" ") + 
+    theme_bw()+
+  scale_fill_brewer(palette = "YlGnBu") + 
+  theme(legend.position=" ")
+```
+
+*VARIABLE OBJETIVO - VARIABLE A PREDECIR*
+
+DIFERENCIA ENTRE HEART DISEASE (ataque cardíaco) VS STOKE ( accidente cerebrovascular)
+Ambos resultan de la falta de flujo sanguíneo a partes críticas del cuerpo: un accidente cerebrovascular es causado por un bloqueo en el flujo sanguíneo al cerebro, mientras que un ataque cardíaco es causado por un bloqueo en el flujo sanguíneo al corazón
+
+```{r}
+table(data$stroke)
+```
+
+```{r}
+stroke<-data.frame(table(data$stroke))
+stroke$frequencia<-round((stroke$Freq/5110)*100,2)
+etiqueta<-paste(stroke$frequencia,"%",sep = " ")
+colores<-c("#B23AEE","#EE799F")
+pie(stroke$frequencia,labels=etiqueta,clockwise=TRUE,col=colores,main="ACCIDENTE CEREBROVASCULAR")
+legend("topright",c("No","Si"),cex=0.9,fill=colores)
+```
+
+
+
+
+
+
+Test chi Square
+
+```{r}
+t1<-table(data$stroke,data$gender)
+chisq.test(t1)
+```
+
+```{r}
+t2<-table(data$stroke,data$age)
+chisq.test(t2)
+```
+
+```{r}
+t3<-table(data$stroke,data$hypertension)
+chisq.test(t3)
+```
+
+```{r}
+t4<-table(data$stroke,data$heart_disease)
+chisq.test(t4)
+```
+
+```{r}
+t5<-table(data$stroke,data$ever_married)
+chisq.test(t5)
+```
+
+```{r}
+t6<-table(data$stroke,data$work_type)
+chisq.test(t6)
+```
+
+```{r}
+t7<-table(data$stroke,data$Residence_type)
+chisq.test(t7)
+```
+
+```{r}
+t8<-table(data$stroke,data$avg_glucose_level)
+chisq.test(t8)
+```
+
+```{r}
+t9<-table(data$stroke,data$bmi)
+chisq.test(t9)
+```
+
+```{r}
+t10<-table(data$stroke,data$smoking_status)
+chisq.test(t10)
+```
+
+Gender y residence type no explican a la variable objetivo. No deberian estar en el modelo
+TRATAMIENTO DE VARIABLES
+
+```{r}
+library(fastDummies)
+data<-dummy_cols(data, select_columns = c("gender","ever_married","work_type","Residence_type","smoking_status","gender"))
+```
+
+```{r}
+data$gender=NULL
+data$ever_married=NULL
+data$work_type=NULL
+data$Residence_type=NULL
+data$smoking_status=NULL
+data$id=NULL
+```
+
+MATRIZ DE CORRELACION
+
+```{r}
+library(corrplot)
+correlacion<- cor(data,method="pearson")
+corrplot(correlacion,method="shade",shade.col=NA,tl.col="black",tl.srt = 90)
+```
+
+```{r}
+library(psych)
+corPlot(data, main = "Matriz de correlación")
+```
+
+```{r}
+write.csv(data,'base.csv')
+```
+
+ANALIZO LAS VARIABLES MAS REPRESENTATIVAS CON LA VARIABLE OBJETIVO despues de obtener los resultados de los modelos
+
+
+-AGE
+
+-BMI 
+
+- AVG GLUCOSE 
+
+
+```{r}
+library(ggplot2)
+
+ggplot(data, aes(x=stroke, y=age,color=stroke)) +
+    geom_point(size=3) + ggtitle("Relacion entre age y stroke ")
+```
+
+```{r}
+library(dplyr)
+importantes<-select(data,age,bmi,avg_glucose_level,stroke)
+menores<-filter(importantes,age<=45)
+mayores<-filter(importantes,age>45)
+
+```
+
+
+BMI CON AGE
+
+```{r}
+ hist (menores$bmi, col = rgb (0,0,1,0.2), xlim = c (0, 60),
+     xlab = ' Valores ', ylab = ' Frecuencia ', main = ' BMI ')
+hist (mayores$bmi, col = rgb (1,0,0,0.2), add = TRUE )
+
+#add legend 
+legend ('topright', c (' Menores ', ' Mayores'),
+      fill = c(rgb (0,0,1,0.2), rgb (1,0,0,0.2)))
+```
+
+GLUCOSA
+
+```{r}
+ hist (menores$avg_glucose_level, col = rgb (0,0,1,0.2), xlim = c (0, 270),
+     xlab = ' Valores ', ylab = ' Frecuencia ', main = ' AVG_GLUCOSE ')
+hist (mayores$avg_glucose_level, col = rgb (1,0,0,0.2), add = TRUE )
+
+#add legend 
+legend ('topright', c (' Menores ', ' Mayores'),
+      fill = c(rgb (0,0,1,0.2), rgb (1,0,0,0.2)))
+```
+
+
+```{r}
+library(ggplot2)
+
+ggplot(mayores, aes(x=bmi, y=age,color=age)) +
+    geom_point(size=3) + ggtitle("Relacion entre age y bmi")
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(menores, aes(x=bmi, y=age,color=age)) +
+    geom_point(size=3) + ggtitle("Relacion entre age y bmi")
+```
+```{r}
+summary(mayores$bmi)
+```
+
+```{r}
+summary(mayores$avg_glucose_level)
+```
+
+```{r}
+summary(menores$bmi)
+```
+
+```{r}
+summary(menores$avg_glucose_level)
+```
+
+
+```{r}
+data$'Nivel_normal'<-ifelse(data$avg_glucose_level<140,"Normal","Anormal")
+```
+
+
+```{r}
+nivel<-select(data,Nivel_normal,stroke)
+```
+
+```{r}
+table(nivel$Nivel_normal)
+```
+
+```{r}
+anormal<-filter(nivel,nivel$Nivel_normal=='Anormal')
+```
+
+```{r}
+table(anormal$stroke)
+```
+
+```{r}
+ggplot(anormal, aes(x=stroke, fill=stroke,colour=stroke)) + 
+  geom_bar( ) +
+  theme(legend.position="none")
+```
+
+Si su IMC es inferior a 18,5 , se encuentra dentro del rango de bajo peso.
+Si su IMC es de 18,5 a 24,9 , se encuentra dentro del rango de peso normal o saludable.
+Si su IMC es de 25,0 a 29,9 , se encuentra dentro del rango de sobrepeso.
+Si su IMC es 30.0 o superior , se encuentra dentro del rango de obesidad.
+
+```{r}
+imc_bajo<-data.frame(filter(data,bmi<18.5))
+```
+
+```{r}
+table(imc_bajo$stroke)
+```
+
+
+```{r}
+imc_alto<-data.frame(filter(data,bmi>30))
+```
+```{r}
+table(imc_alto$stroke)
+```
+
+```{r}
+infarto<-data.frame(filter(data,stroke==1))
+```
+
+```{r}
+hist(infarto$age,main="EDAD",col="darkblue", xlab= " ")
+```
+
+
+```{r}
+hist(infarto$bmi,main="BMI",col="darkblue", xlab= " ")
+```
+```{r}
+hist(infarto$avg_glucose_level,main="Nivel de glucosa",col="darkblue", xlab= " ")
+```
+
